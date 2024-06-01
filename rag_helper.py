@@ -14,6 +14,12 @@ import pymongo
 from typing import List
 from langchain_together.embeddings import TogetherEmbeddings
 from langchain_community.document_loaders import TextLoader
+from openai import OpenAI
+import re
+import sys
+import subprocess
+import tempfile
+import shlex
 
 load_dotenv()
 # Connect to your Atlas cluster
@@ -114,7 +120,47 @@ def generate_design_document(document: str):
     documents = retriever.get_relevant_documents(prompt)
     return answer
 
-print(f'Design Document: {generate_design_document("output.txt")}')
+def generate_architecture_diagram_code(design_document):
+    openaiClient = OpenAI()
+    messages = [
+        {"role": "system", "content": "You are an expert Python developer experienced with the Diagrams package. You should only give the code delimited by ```, do not give any descriptions or how to run it. The filename for the outputted image should be diagram.png, so make sure to add the parameter (, filename='diagram.png'). Give me Python code that creates an architecture diagram for the design document below:"}
+        ,{
+        "role": "user", "content": design_document}]
+    response = openaiClient.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        temperature=0)
+    code_string = response.choices[0].message.content.strip()
+    print("Code String: ", code_string)
+    code_pattern = re.compile("```(?:python)?(.*?)```", re.DOTALL)
+    code_match = code_pattern.search(code_string)
+    if code_match:
+        code = code_match.group(1).strip()
+    else:
+        print("Error: Could not find the code.")
+        sys.exit(1)
+
+    # Specify your filename here
+    filename = "output.py"
+
+    with open(filename, 'w') as file:
+        file.write(code)
+
+    manim_command = f"""python {filename}"""
+    file_name_with_extension = os.path.basename(filename)
+    folder_name, _ = os.path.splitext(file_name_with_extension)
+    args = shlex.split(manim_command)
+    try:
+        # Run the Manim command
+        subprocess.run(args, check=True)
+    except subprocess.CalledProcessError as e:
+        # Handle errors in the external commands if they fail
+        print(f"An error occurred: {e}")
+
+design_document = generate_design_document("output.txt")
+
+print(f'Design Document: {design_document}')
+print(f'Architechture Code:{generate_architecture_diagram_code(design_document)}')
 
 
 
