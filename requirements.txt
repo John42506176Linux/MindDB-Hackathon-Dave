@@ -3,3 +3,5 @@ langchain-mongodb
 langchain-openai 
 pymongo 
 pypdf
+together
+python-dotenv
