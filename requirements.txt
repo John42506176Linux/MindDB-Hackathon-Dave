@@ -2,6 +2,8 @@ streamlit
 langchain 
 langchain-mongodb 
 langchain-openai 
+langchain-community
+langchain-together
 pymongo 
 pypdf
 together
