@@ -1,4 +1,6 @@
 import streamlit as st
+import rag_helper as rh
+import tempfile
 from streamlit_chat import message
 from streamlit_mic_recorder import mic_recorder
 
@@ -15,6 +17,15 @@ else:
     with open('output.txt', 'w') as f:
         f.write(uploaded_file.getvalue())
     st.button('Start')
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(uploaded_file.getvalue())
+        tmp_file_path = tmp_file.name
+        rh.embed_pdf(tmp_file_path)
+        answer = rh.generate_design_document(tmp_file_path)
+        print(answer)
+        st.session_state.messages = []
+        st.session_state.messages.append({"role": "user", "content": answer})
+    
 
 def main():
     # Initialize chat history
