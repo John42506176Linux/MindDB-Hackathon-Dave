@@ -1,0 +1,21 @@
+digraph "Art Marketplace Architecture" {
+	graph [fontcolor="#2D3436" fontname="Sans-Serif" fontsize=15 label="Art Marketplace Architecture" nodesep=0.60 pad=2.0 rankdir=LR ranksep=0.75 splines=ortho]
+	node [fixedsize=true fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13 height=1.4 imagescale=true labelloc=b shape=box style=rounded width=1.4]
+	edge [color="#7B8894"]
+	"5a2c5f8b15b540b5863db954558acdf7" [label=Users height=1.9 image="C:\Users\kongtj\Documents\MindsDBHackathon\venv\lib\site-packages\resources/onprem/client\users.png" shape=none]
+	"119daff1defe489980a5a4a39f938d58" [label=Internet height=1.9 image="C:\Users\kongtj\Documents\MindsDBHackathon\venv\lib\site-packages\resources/onprem/network\internet.png" shape=none]
+	subgraph "cluster_AWS Cloud" {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label="AWS Cloud" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"46b28119df4d47dabb467d5baf1b9399" [label=CloudFront height=1.9 image="C:\Users\kongtj\Documents\MindsDBHackathon\venv\lib\site-packages\resources/aws/network\cloudfront.png" shape=none]
+		"22c9924b77bd42d3b6ce9a2468c51ce9" [label="EC2 Instances" height=1.9 image="C:\Users\kongtj\Documents\MindsDBHackathon\venv\lib\site-packages\resources/aws/compute\ec2.png" shape=none]
+		"80ac9515584f46c4872432b149a28fd6" [label="S3 Storage" height=1.9 image="C:\Users\kongtj\Documents\MindsDBHackathon\venv\lib\site-packages\resources/aws/storage\simple-storage-service-s3.png" shape=none]
+		ec8dc2367a444311abca2724d2fcab55 [label="RDS Database" height=1.9 image="C:\Users\kongtj\Documents\MindsDBHackathon\venv\lib\site-packages\resources/aws/database\rds.png" shape=none]
+		"25c9456f48424d3e91a93d98fe99cd61" [label="SSO & ACL" height=1.9 image="C:\Users\kongtj\Documents\MindsDBHackathon\venv\lib\site-packages\resources/onprem/security\vault.png" shape=none]
+	}
+	"5a2c5f8b15b540b5863db954558acdf7" -> "119daff1defe489980a5a4a39f938d58" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"119daff1defe489980a5a4a39f938d58" -> "46b28119df4d47dabb467d5baf1b9399" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"46b28119df4d47dabb467d5baf1b9399" -> "22c9924b77bd42d3b6ce9a2468c51ce9" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"22c9924b77bd42d3b6ce9a2468c51ce9" -> "80ac9515584f46c4872432b149a28fd6" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"22c9924b77bd42d3b6ce9a2468c51ce9" -> ec8dc2367a444311abca2724d2fcab55 [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"22c9924b77bd42d3b6ce9a2468c51ce9" -> "25c9456f48424d3e91a93d98fe99cd61" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+}

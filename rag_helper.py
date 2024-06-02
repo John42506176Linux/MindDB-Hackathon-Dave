@@ -3,7 +3,6 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_mongodb import MongoDBAtlasVectorSearch
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pymongo import MongoClient
@@ -20,6 +19,7 @@ import sys
 import subprocess
 import tempfile
 import shlex
+from langchain_groq import ChatGroq
 
 load_dotenv()
 # Connect to your Atlas cluster
@@ -72,7 +72,7 @@ def generate_design_document(document: str):
     Prompt: {question}
     """
     custom_rag_prompt = PromptTemplate.from_template(template)
-    llm = ChatOpenAI(temperature=0, model="gpt-4o")
+    llm = ChatGroq(temperature=0, model_name="mixtral-8x7b-32768")
     def format_docs(docs):
         return "\n\n".join(doc.page_content for doc in docs)
     # Construct a chain to answer questions on your data
@@ -123,44 +123,50 @@ def generate_design_document(document: str):
 def generate_architecture_diagram_code(design_document):
     openaiClient = OpenAI()
     messages = [
-        {"role": "system", "content": "You are an expert Python developer experienced with the Diagrams package. You should only give the code delimited by ```, do not give any descriptions or how to run it. The filename for the outputted image should be diagram.png, so make sure to add the parameter (, filename='diagram.png'). Give me Python code that creates an architecture diagram for the design document below:"}
+        {"role": "system", "content": """
+         You are an expert Python developer experienced with the Diagrams package. You should only give the code delimited by ```, do not give any descriptions or how to run it. 
+         Here are the requirements for the code:
+            1. The code should use the Diagrams package to create an architecture diagram.
+            2. The filename for the outputted image should be diagram.png, so make sure to add the parameter (, filename='diagram.png'). Give me Python code that creates an architecture diagram for the design document below:
+            3. Reference https://diagrams.mingrammer.com/docs/nodes/ for the current Diagrams package documentation.
+            3. Note ignore any VPNS,Kubernetes, or Okta in the design document.
+         The filename for the outputted image should be diagram.png, so make sure to add the parameter (, filename='diagram.png'). Give me Python code that creates an architecture diagram for the design document below:
+         """}
         ,{
         "role": "user", "content": design_document}]
-    response = openaiClient.chat.completions.create(
-        model="gpt-4o",
-        messages=messages,
-        temperature=0)
-    code_string = response.choices[0].message.content.strip()
-    print("Code String: ", code_string)
-    code_pattern = re.compile("```(?:python)?(.*?)```", re.DOTALL)
-    code_match = code_pattern.search(code_string)
-    if code_match:
-        code = code_match.group(1).strip()
-    else:
-        print("Error: Could not find the code.")
-        sys.exit(1)
+    max_retries = 5
+    for _ in range(max_retries):
+        response = openaiClient.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            temperature=0.1)
+        code_string = response.choices[0].message.content.strip()
+        code_pattern = re.compile("```(?:python)?(.*?)```", re.DOTALL)
+        code_match = code_pattern.search(code_string)
+        if code_match:
+            code = code_match.group(1).strip()
+        else:
+            print("Error: Could not find the code.")
+            continue
 
-    # Specify your filename here
-    filename = "output.py"
+        # Specify your filename here
+        filename = "output.py"
 
-    with open(filename, 'w') as file:
-        file.write(code)
+        with open(filename, 'w') as file:
+            file.write(code)
 
-    manim_command = f"""python {filename}"""
-    file_name_with_extension = os.path.basename(filename)
-    folder_name, _ = os.path.splitext(file_name_with_extension)
-    args = shlex.split(manim_command)
-    try:
-        # Run the Manim command
-        subprocess.run(args, check=True)
-    except subprocess.CalledProcessError as e:
-        # Handle errors in the external commands if they fail
-        print(f"An error occurred: {e}")
-
-design_document = generate_design_document("output.txt")
-
-print(f'Design Document: {design_document}')
-print(f'Architechture Code:{generate_architecture_diagram_code(design_document)}')
+        manim_command = f"""python {filename}"""
+        file_name_with_extension = os.path.basename(filename)
+        folder_name, _ = os.path.splitext(file_name_with_extension)
+        args = shlex.split(manim_command)
+        try:
+            # Run the Manim command
+            subprocess.run(args, check=True)
+            break
+        except subprocess.CalledProcessError as e:
+            # Handle errors in the external commands if they fail
+            print(f"An error occurred: {e}")
+            code_string += f"\n\nAn error occurred last time: {e} Make sure to fix the error and run the code again."
 
 
 
